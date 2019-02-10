@@ -14,12 +14,7 @@ Last edited: 3/2/18
 
 
 class FlowIntegrator:
-    def __init__(self, vxDataSet, vyDataSet, direction="up"):
-
-        if direction == "up":
-            self.direction = -1
-        else:
-            self.direction = 1
+    def __init__(self, vxDataSet, vyDataSet):
 
         self.vxDataSet = vxDataSet
         self.vyDataSet = vyDataSet
@@ -33,7 +28,7 @@ class FlowIntegrator:
             vx = vxDataSet.getInterpolatedValue(x, y)
             vy = vyDataSet.getInterpolatedValue(x, y)
             v_mag = np.sqrt(vx**2 + vy**2)
-            return np.array([vx * self.direction/ v_mag, vy * self.direction/ v_mag, v_mag])
+            return np.array([-vx / v_mag, -vy / v_mag, v_mag])
 
         # ODE integrator
         self.integrator = ode(rhs).set_integrator('vode', method = 'adams')

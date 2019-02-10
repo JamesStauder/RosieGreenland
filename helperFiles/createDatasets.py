@@ -20,29 +20,39 @@ def createInitialDatasets():
     datasetDict = {}
 
     dataFile = h5py.File(dataFileName, 'r')
-    map['x1'] = len(dataFile['bed'][:][0])
-    map['y1'] = len(dataFile['bed'][:])
-    map['proj_x1'] = dataFile['x'][:][-1]
-    map['proj_y1'] = dataFile['y'][:][-1]
-    velocity = Dataset('velocity')
-    datasetDict['velocity'] = velocity
 
-    smb = Dataset('smb')
-    datasetDict['smb'] = smb
+    x = dataFile['Grid']['x500'][:]
+    y = dataFile['Grid']['y500'][:]
 
-    bed = Dataset('bed')
-    datasetDict['bed'] = bed
+    map['x'] = x
+    map['y'] = y
 
-    surface = Dataset('surface')
-    datasetDict['surface'] = surface
+    velocityData = np.sqrt(dataFile['Velocity']['VX500'][:]**2 + dataFile['Velocity']['VY500'][:]**2)
+    datasetDict['velocity'] = Dataset('velocity', velocityData)
 
-    thickness = Dataset('thickness')
-    datasetDict['thickness'] = thickness
+    smbData = dataFile['Smb_T2m']['smb500'][:]
+    datasetDict['smb'] = Dataset('smb', smbData)
 
-    t2m = Dataset('t2m')
-    datasetDict['t2m'] = t2m
+    bedData = dataFile['BedMachine']['bed500'][:]
+    datasetDict['bed'] = Dataset('bed', bedData)
+
+    surfaceData = dataFile['BedMachine']['surface500'][:]
+    datasetDict['surface'] = Dataset('surface', surfaceData)
+
+    thicknessData = dataFile['BedMachine']['thickness500'][:]
+    datasetDict['thickness'] = Dataset('thickness', thicknessData)
+
+    t2mData = dataFile['Smb_T2m']['t2m500'][:]
+    datasetDict['t2m'] = Dataset('t2m', t2mData)
+
 
     dataFile.close()
+
+
+
+
+
+
 
     print "Loaded all data sets in ", time.time() - t0, " seconds"
     return datasetDict

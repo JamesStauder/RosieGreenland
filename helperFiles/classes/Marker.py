@@ -27,7 +27,7 @@ class Marker:
         self.px, self.py = colorToProj(self.cx, self.cy)
         self.pen = blackPlotPen
         self.pen.setWidth(2)
-        self.c = 3
+        self.c = .25
         if plotCross:
             self.cross = [
                 pg.PlotDataItem([self.cx - self.c, self.cx + self.c], [self.cy - self.c, self.cy + self.c],

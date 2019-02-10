@@ -4,12 +4,11 @@ from Instructions import *
 from FlowIntegrator import *
 from Dataset import *
 from Marker import *
-from Square import *
 from ModelGUI import *
 from ..caching.cachingFunctions import *
-from pyproj import Proj
 import time
-
+from Square import *
+from pyproj import Proj
 '''
 Class: MainWindow
 Argument list:
@@ -50,7 +49,7 @@ class MainWindow(QMainWindow):
         self.lengthOfFlowline = 1
         self.flowlines = []
         self.flowlineMarkers = []
-        self.integratorPerMarker = 10
+        self.integratorPerMarker = 1
 
         '''
         Side widget with button
@@ -84,14 +83,6 @@ class MainWindow(QMainWindow):
         self.spatialResolutionLayout.addWidget(self.distanceLabel)
         self.spatialResolutionLayout.addWidget(self.distanceLineEdit)
         self.buttonBox.addWidget(self.distanceWidget)
-
-
-        self.upButton = QRadioButton('Integrate Up')
-        self.downButton = QRadioButton('Integrate Down')
-        self.upButton.setChecked(True)
-        self.buttonBox.addWidget(self.upButton)
-        self.buttonBox.addWidget(self.downButton)
-
 
         self.averageWidget = QtGui.QWidget()
         self.averageLayout = QtGui.QHBoxLayout()
@@ -135,10 +126,12 @@ class MainWindow(QMainWindow):
         self.velocityWidthButton.setMaximumWidth(self.maxWidth)
         self.buttonBox.addWidget(self.velocityWidthButton)
 
+
         self.rosieButton = QtGui.QPushButton('Super special Rosie Button')
         self.rosieButton.setEnabled(False)
         self.rosieButton.setMaximumWidth(self.maxWidth)
         self.buttonBox.addWidget(self.rosieButton)
+
 
         self.latLongWidget = QtGui.QWidget()
         self.latLongLayout = QtGui.QHBoxLayout()
@@ -171,7 +164,6 @@ class MainWindow(QMainWindow):
 
         self.buttonBox.addWidget(self.latLongWidget2)
         self.buttonBox.addWidget(self.latLongButton2)
-
 
         self.textOut = QtGui.QTextBrowser()
         self.textOut.setMaximumWidth(self.maxWidth)
@@ -295,10 +287,6 @@ class MainWindow(QMainWindow):
                         break
             '''
             self.rosieButton.setEnabled(True)
-            self.upButton.setEnabled(False)
-            self.downButton.setEnabled(False)
-            if self.downButton.isChecked():
-                self.flowIntegrator.direction = 1
             # Checks to see only if first marker in each flowline is detected.
             for i in range(len(self.flowlineMarkers)):
                 if self.flowlineMarkers[i][0].checkClicked(e.pos()):
@@ -317,7 +305,6 @@ class MainWindow(QMainWindow):
                 self.distanceLineEdit.setReadOnly(True)
                 self.flowlineDistance = int(self.distanceLineEdit.text()) * 1000
                 self.lengthOfFlowline = int(self.flowlineDistance / float(self.spatialResolutionLineEdit.text()))
-                self.integratorPerMarker = int(math.ceil(10000 / (float(self.spatialResolutionLineEdit.text()))))
                 xClickPosition = e.pos().x()
                 yClickPosition = e.pos().y()
 
@@ -336,6 +323,7 @@ class MainWindow(QMainWindow):
                     print "Integration Error. Try Again"
                     return
 
+
                 # Create a flowline of markers spaced out based on the IntegratorPerMarker
                 newFlowlineMarkers = newFlowline[::self.integratorPerMarker]
 
@@ -350,10 +338,6 @@ class MainWindow(QMainWindow):
                 self.flowlines.append(newFlowline)
                 self.flowlineMarkers.append(newFlowlineMarkers)
 
-                '''
-                if len(self.flowlines) == 2:
-                    self.velocityWidthButton.setEnabled(True)
-                '''
 
         # Release the marker that was previously held
         else:
@@ -458,7 +442,7 @@ class MainWindow(QMainWindow):
         x1, y1 = self.flowlineMarkers[0][0].cx, self.flowlineMarkers[0][0].cy
         x2, y2 = self.flowlineMarkers[1][0].cx, self.flowlineMarkers[1][0].cy
 
-        numberOfLines = 30
+        numberOfLines = 100
 
         dx = (x2 - x1) / numberOfLines
         dy = (y2 - y1) / numberOfLines
@@ -489,7 +473,8 @@ class MainWindow(QMainWindow):
 
 
 
-            #Code to create Markers for these flowlines. 
+            #Code to create Markers for these flowlines.
+            '''
             newFlowlineMarkers = newLine[::self.integratorPerMarker]
             for i in range(len(newFlowlineMarkers)):
                 dataX = newFlowlineMarkers[i][0]
@@ -523,6 +508,8 @@ class MainWindow(QMainWindow):
             self.flowlineMarkers[1][i].setLine(pg.PlotDataItem(xValues, yValues, connect='all', pen=skinnyBlackPlotPen),
                                                0)
             self.imageItemContainer.currentWidget().addItem(self.flowlineMarkers[1][i].lines[0])
+            '''
+
 
 
 
@@ -544,6 +531,40 @@ class MainWindow(QMainWindow):
         self.runModelButton.setEnabled(True)
         self.velocityWidthButton.setEnabled(False)
 
+        vAll = []
+
+        for line in range(len(self.flowlines)):
+            v = []
+            for point in range(len(self.flowlines[0])):
+                v.append(self.datasetDict['velocity'].getInterpolatedValue(self.flowlines[line][point][0],
+                                                                           self.flowlines[line][point][1])[0][0])
+            vAll.append(v)
+
+        midLine = []
+        for point in range(len(self.flowlines[0])):
+            midLine.append(self.datasetDict['velocity'].getInterpolatedValue(self.flowlines[2][point][0],
+                                                                       self.flowlines[2][point][1])[0][0])
+        avg = []
+        for point in range(len(vAll[0])):
+            tot = 0
+            for line in range(len(vAll)):
+                tot += vAll[line][point]
+            avg.append(tot/len(vAll[0]))
+
+        minIndex = 0
+        for point in avg:
+            if point < 120:
+                break
+            minIndex += 1
+        maxIndex = minIndex
+        for point in avg[minIndex:]:
+            if point < 50:
+                break
+            maxIndex += 1
+
+        dx = 1000
+        dy = np.diff(avg)/dx
+        dy2 = np.diff(midLine)/dx
         interpolateFlowlineData(self.datasetDict, self.flowlines,midFlowline, self.flowlineDistance,
                                 float(self.spatialResolutionLineEdit.text()), self.profileLineEdit.text())
         print "Profile creation took :", time.time() - t0
@@ -616,9 +637,15 @@ class MainWindow(QMainWindow):
 
     # TODO: Does this have to be tied to mw? Can this be changed in some way?
     def createIntegrator(self):
-        vx = Dataset('VX')
-        vy = Dataset('VY')
+        dataFile = h5py.File(dataFileName, 'r')
+        vxData = dataFile['Velocity']['VX500'][:]
+        vyData = dataFile['Velocity']['VY500'][:]
+
+        vx = Dataset('VX',vxData)
+        vy = Dataset('VY',vyData)
         self.flowIntegrator = FlowIntegrator(vx, vy)
+        dataFile.close()
+
 
     def runModel(self):
         m = ModelGUI(self)
@@ -631,8 +658,6 @@ class MainWindow(QMainWindow):
         self.runModelButton.setEnabled(False)
         self.spatialResolutionLineEdit.setReadOnly(False)
         self.distanceLineEdit.setReadOnly(False)
-        self.upButton.setEnabled(True)
-        self.downButton.setEnabled(True)
 
     '''
     Function: connectButtons
@@ -651,9 +676,12 @@ class MainWindow(QMainWindow):
         self.velocityWidthButton.clicked.connect(self.calcVelocityWidth)
         self.runModelButton.clicked.connect(self.runModel)
         self.resetButton.clicked.connect(self.reset)
-        self.rosieButton.clicked.connect(self.rosie)
         self.latLongButton.clicked.connect(self.markLatLong)
+        self.rosieButton.clicked.connect(self.rosie)
         self.latLongButton2.clicked.connect(self.markLatLong2)
+
+    def showInstructions(self):
+        Instructions(self)
 
 
     def rosie(self):
@@ -680,24 +708,16 @@ class MainWindow(QMainWindow):
 
     def markLatLong(self):
 
-        self.rosieButton.setEnabled(True)
-        self.downButton.setEnabled(False)
-        self.upButton.setEnabled(False)
-
         if (len(self.flowlines) < 2):
             self.spatialResolutionLineEdit.setReadOnly(True)
             self.distanceLineEdit.setReadOnly(True)
             self.flowlineDistance = int(self.distanceLineEdit.text()) * 1000
             self.lengthOfFlowline = int(self.flowlineDistance / float(self.spatialResolutionLineEdit.text()))
-            self.integratorPerMarker = int(math.ceil(10000 / (float(self.spatialResolutionLineEdit.text()))))
 
-
-
-            dx,dy = self.translateLatLong(
+            dx, dy = self.translateLatLong(
                 float(self.latLineEdit.text()),
                 float(self.longLineEdit.text())
             )
-
 
             # Create new flowline
             newFlowline = []
@@ -705,9 +725,6 @@ class MainWindow(QMainWindow):
                 newFlowline.append(None)
             newFlowline[0] = [dx, dy]
 
-
-            if self.downButton.isChecked():
-                self.flowIntegrator.direction = 1
             newFlowline = self.flowIntegrator.integrate(dx, dy, newFlowline, 0,
                                                         float(self.spatialResolutionLineEdit.text()))
 
@@ -744,10 +761,6 @@ class MainWindow(QMainWindow):
         self.imageItemContainer.currentWidget().addItem(newSquare.getCross()[3])
 
 
-    def showInstructions(self):
-        Instructions(self)
-
     def translateLatLong(self, lat, long):
         proj = Proj(init = 'epsg:3413')
-
         return proj(long, lat)

@@ -1,11 +1,11 @@
 import h5py
 from constants import *
 import pyqtgraph as pg
-
+import numpy as np
 
 def createColorMap(data):
     colorMapFile = h5py.File(cmFileName, 'r')
-    data.colorData = colorMapFile[data.name][:]
+    data.colorData = np.flipud(colorMapFile[data.name][:])
 
     data.imageItem = pg.ImageItem(data.colorData)
     data.imageItem.setOpts(axisOrder='row-major')
@@ -39,9 +39,9 @@ def createColorMap(data):
     data.colorBarAnchorWidget.getViewBox().setMouseEnabled(x=False, y=False)
     data.colorBarAnchorWidget.anchor(itemPos=(1,0), parentPos=(1,0), offset=(-10,-10))
    
-    
-    colorMapFile.close()
     '''
+    colorMapFile.close()
+
 '''
 This is used to generate a colorMap for our data. Currently not needed
 def getCM(dataName):
