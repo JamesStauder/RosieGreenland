@@ -84,6 +84,14 @@ class MainWindow(QMainWindow):
         self.spatialResolutionLayout.addWidget(self.distanceLineEdit)
         self.buttonBox.addWidget(self.distanceWidget)
 
+
+        self.upButton = QRadioButton('Integrate Up')
+        self.downButton = QRadioButton('Integrate Down')
+        self.upButton.setChecked(True)
+        self.buttonBox.addWidget(self.upButton)
+        self.buttonBox.addWidget(self.downButton)
+
+
         self.averageWidget = QtGui.QWidget()
         self.averageLayout = QtGui.QHBoxLayout()
         self.averageWidget.setLayout(self.averageLayout)
@@ -287,6 +295,12 @@ class MainWindow(QMainWindow):
                         break
             '''
             self.rosieButton.setEnabled(True)
+            self.upButton.setEnabled(False)
+            self.downButton.setEnabled(False)
+            if self.downButton.isChecked():
+                self.flowIntegrator.direction = 1
+            else:
+                self.flowIntegrator.direction = -1
             # Checks to see only if first marker in each flowline is detected.
             for i in range(len(self.flowlineMarkers)):
                 if self.flowlineMarkers[i][0].checkClicked(e.pos()):
@@ -300,7 +314,7 @@ class MainWindow(QMainWindow):
 
             # If no marker selected previously or currently create new flowline. Also cannot create more
             # then 2 flowlines.
-            if (len(self.flowlines) < 2) and self.isMarkerSelected is False:
+            if (len(self.flowlines) < 1) and self.isMarkerSelected is False:
                 self.spatialResolutionLineEdit.setReadOnly(True)
                 self.distanceLineEdit.setReadOnly(True)
                 self.flowlineDistance = int(self.distanceLineEdit.text()) * 1000
@@ -658,6 +672,9 @@ class MainWindow(QMainWindow):
         self.runModelButton.setEnabled(False)
         self.spatialResolutionLineEdit.setReadOnly(False)
         self.distanceLineEdit.setReadOnly(False)
+        self.rosieButton.setEnabled(False)
+        self.upButton.setEnabled(True)
+        self.downButton.setEnabled(True)
 
     '''
     Function: connectButtons
@@ -709,6 +726,7 @@ class MainWindow(QMainWindow):
     def markLatLong(self):
 
         if (len(self.flowlines) < 2):
+            self.rosieButton.setEnabled(True)
             self.spatialResolutionLineEdit.setReadOnly(True)
             self.distanceLineEdit.setReadOnly(True)
             self.flowlineDistance = int(self.distanceLineEdit.text()) * 1000
